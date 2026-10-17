@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-    namespace = "com.baixavideo.app"
+    namespace = "br.com.mediakeeper.app"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.baixavideo.app"
+        applicationId = "br.com.mediakeeper.app"
         minSdk = 26
         targetSdk = 34
         versionCode = 1
