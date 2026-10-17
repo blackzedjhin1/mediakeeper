@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Baixa Vídeo</string>
+    <string name="app_name">MediaKeeper</string>
     <string name="hint_url">Cole o link do vídeo aqui</string>
     <string name="paste">Colar</string>
     <string name="download">BAIXAR VÍDEO</string>
