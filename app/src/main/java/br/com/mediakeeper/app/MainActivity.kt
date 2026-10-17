@@ -1,6 +1,7 @@
 package br.com.mediakeeper.app
 
 import android.Manifest
+import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
@@ -50,6 +51,7 @@ class MainActivity : AppCompatActivity() {
 
     private var pendingUrl: String? = null
     private var downloadingId: String? = null
+    private var erroMostrado: MutableSet<String> = mutableSetOf()
 
     private val linkRegex = Regex("https?://\\S+")
 
@@ -151,6 +153,7 @@ class MainActivity : AppCompatActivity() {
                 launch {
                     Downloads.jobs.collect { jobs ->
                         adapter.submit(jobs)
+                        mostrarErroSePreciso(jobs)
                         val active = jobs.firstOrNull { it.status == JobStatus.RUNNING }
                             ?: jobs.firstOrNull { it.status == JobStatus.QUEUED }
                         downloadingId = active?.id
@@ -184,6 +187,7 @@ class MainActivity : AppCompatActivity() {
     private fun engineStatus(): String = when {
         Engine.lastError != null -> "Erro no motor: ${Engine.lastError}"
         Engine.booting -> "Preparando o motor (só na primeira vez, aguarde)..."
+        Engine.updating -> Engine.updateStatus ?: "Verificando o motor..."
         else -> "Motor pronto - yt-dlp ${Engine.version ?: "?"}"
     }
 
@@ -204,7 +208,9 @@ class MainActivity : AppCompatActivity() {
             askNotifications.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
 
-        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
+        // Android 10 (API 29) ainda precisa da permissao antiga para gravar na
+        // pasta publica Download. Do Android 11 em diante o sistema cuida disso.
+        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.Q) {
             val granted = ContextCompat.checkSelfPermission(
                 this,
                 Manifest.permission.WRITE_EXTERNAL_STORAGE
@@ -223,18 +229,38 @@ class MainActivity : AppCompatActivity() {
         val index = spinnerQuality.selectedItemPosition.coerceIn(0, presets.size - 1)
         val preset = presets[index]
 
-        if (isLoginWall(url) && !Downloads.hasCookies(this)) {
-            toast("Dica: Instagram/Facebook podem pedir o arquivo de cookies (botão Cookies)")
-        }
-
+        // Os cookies importados sao usados automaticamente pelo motor. Nada de
+        // pedir para o usuario mexer neles a cada download.
         Downloads.start(this, url, preset)
         etUrl.setText("")
         hideKeyboard()
     }
 
-    private fun isLoginWall(url: String): Boolean =
-        url.contains("instagram", true) || url.contains("facebook", true) ||
-            url.contains("tiktok.com/@", true)
+    /**
+     * Um download que falhou mostra o motivo inteiro numa janela, com botao
+     * para copiar o texto. Assim o usuario consegue ver (e mandar) o erro real
+     * em vez de adivinhar o que aconteceu.
+     */
+    private fun mostrarErroSePreciso(jobs: List<DownloadJob>) {
+        val falhou = jobs.firstOrNull {
+            it.status == JobStatus.ERROR && it.id !in erroMostrado && it.detail.isNotBlank()
+        } ?: return
+        erroMostrado.add(falhou.id)
+        if (isFinishing || isDestroyed) return
+
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.error_title)
+            .setMessage(falhou.detail)
+            .setNeutralButton(R.string.copy_error) { _, _ -> copiar(falhou.detail) }
+            .setPositiveButton(R.string.close, null)
+            .show()
+    }
+
+    private fun copiar(texto: String) {
+        val manager = getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
+        manager?.setPrimaryClip(ClipData.newPlainText(getString(R.string.app_name), texto))
+        toast("Erro copiado")
+    }
 
     private fun pasteFromClipboard() {
         val manager = getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
