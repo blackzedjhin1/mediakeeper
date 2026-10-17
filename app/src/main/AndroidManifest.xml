@@ -24,7 +24,7 @@
         android:requestLegacyExternalStorage="true"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.BaixaVideo">
+        android:theme="@style/Theme.MediaKeeper">
 
         <activity
             android:name=".MainActivity"
