@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Baixa Vídeo</string>
+    <string name="hint_url">Cole o link do vídeo aqui</string>
+    <string name="paste">Colar</string>
+    <string name="download">BAIXAR VÍDEO</string>
+    <string name="cancel">Cancelar</string>
+    <string name="history">Baixados</string>
+    <string name="update_engine">Atualizar motor</string>
+    <string name="cookies">Cookies</string>
+    <string name="open">Abrir</string>
+    <string name="share">Compartilhar</string>
+    <string name="delete">Excluir</string>
+    <string name="remove">Remover</string>
+    <string name="error_url">Cole um link válido (começando com http)</string>
+    <string name="notification_channel_downloads">Downloads</string>
+</resources>
