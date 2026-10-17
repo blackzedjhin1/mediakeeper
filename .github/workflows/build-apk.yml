@@ -1,0 +1,60 @@
+name: Gerar APK
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Baixar o codigo
+        uses: actions/checkout@v4
+
+      - name: Preparar o Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Preparar o Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Preparar o Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+
+      - name: Descobrir a pasta do projeto
+        id: root
+        run: |
+          if [ -f settings.gradle.kts ]; then
+            echo "dir=." >> "$GITHUB_OUTPUT"
+          elif [ -f BaixaVideo/settings.gradle.kts ]; then
+            echo "dir=BaixaVideo" >> "$GITHUB_OUTPUT"
+          else
+            echo "::error::Nao encontrei o settings.gradle.kts. Envie a pasta do projeto para o repositorio."
+            exit 1
+          fi
+
+      - name: Instalar componentes do Android
+        run: |
+          yes | sdkmanager --licenses > /dev/null 2>&1 || true
+          sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0" || true
+
+      - name: Compilar o APK
+        working-directory: ${{ steps.root.outputs.dir }}
+        run: gradle assembleDebug --no-daemon --stacktrace
+
+      - name: Publicar o APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: baixa-video-apk
+          path: ${{ steps.root.outputs.dir }}/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 30
