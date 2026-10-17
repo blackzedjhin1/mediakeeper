@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <paths>
     <external-path
-        name="downloads_baixavideo"
-        path="Download/BaixaVideo/" />
+        name="downloads_mediakeeper"
+        path="Download/MediaKeeper/" />
     <external-path
         name="downloads"
         path="Download/" />
