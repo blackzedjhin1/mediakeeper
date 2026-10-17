@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -70,10 +70,24 @@ jobs:
         working-directory: ${{ steps.root.outputs.dir }}
         run: gradle assembleDebug --no-daemon --stacktrace
 
-      - name: Publicar o APK
+      - name: Publicar o APK como artefato
         uses: actions/upload-artifact@v4
         with:
           name: baixa-video-apk
           path: ${{ steps.root.outputs.dir }}/app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
           retention-days: 30
+
+      # Gera um link publico e direto para o celular baixar o APK, sem
+      # precisar de login no GitHub e sem descompactar nada:
+      # https://github.com/blackzedjhin1/baixa-video/releases/latest/download/baixa-video.apk
+      - name: Publicar o APK como Release
+        working-directory: ${{ steps.root.outputs.dir }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cp app/build/outputs/apk/debug/app-debug.apk baixa-video.apk
+          ls -lh baixa-video.apk
+          gh release view v1.0 > /dev/null 2>&1 || \
+            gh release create v1.0 --title "Baixa Video 1.0" --notes "APK gerado automaticamente pelo GitHub Actions."
+          gh release upload v1.0 baixa-video.apk --clobber
