@@ -14,5 +14,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "BaixaVideo"
+rootProject.name = "MediaKeeper"
 include(":app")
