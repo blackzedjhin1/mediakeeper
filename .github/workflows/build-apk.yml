@@ -22,8 +22,32 @@ jobs:
           distribution: temurin
           java-version: '17'
 
+      # O runner do GitHub ja vem com o Android SDK instalado em
+      # /usr/local/lib/android/sdk. Nao usamos a acao
+      # android-actions/setup-android porque ela tenta instalar o pacote
+      # "tools", que foi removido do repositorio do Google, e o job morre
+      # antes de compilar qualquer coisa.
       - name: Preparar o Android SDK
-        uses: android-actions/setup-android@v3
+        run: |
+          SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+          echo "SDK encontrado em: $SDK"
+          ls "$SDK" || true
+
+          SDKM="$(command -v sdkmanager || true)"
+          if [ -z "$SDKM" ]; then
+            SDKM="$(find "$SDK/cmdline-tools" -name sdkmanager -type f 2>/dev/null | head -n 1)"
+          fi
+          echo "sdkmanager: $SDKM"
+
+          if [ -n "$SDKM" ]; then
+            yes | "$SDKM" --licenses > /dev/null 2>&1 || true
+            "$SDKM" "platform-tools" "platforms;android-34" "build-tools;34.0.0" > /dev/null 2>&1 || true
+          fi
+
+          echo "ANDROID_HOME=$SDK" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$SDK" >> "$GITHUB_ENV"
+          echo "Plataformas instaladas:"
+          ls "$SDK/platforms" || true
 
       - name: Preparar o Gradle
         uses: gradle/actions/setup-gradle@v4
@@ -41,11 +65,6 @@ jobs:
             echo "::error::Nao encontrei o settings.gradle.kts. Envie a pasta do projeto para o repositorio."
             exit 1
           fi
-
-      - name: Instalar componentes do Android
-        run: |
-          yes | sdkmanager --licenses > /dev/null 2>&1 || true
-          sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0" || true
 
       - name: Compilar o APK
         working-directory: ${{ steps.root.outputs.dir }}
